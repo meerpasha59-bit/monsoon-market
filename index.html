@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monsoon Market</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;background:#10202b;color:#f3ead7}
+#app{max-width:960px;margin:0 auto;padding:16px}
+h1{margin:0;font-size:28px;color:#ffc857}h2{margin:8px 0;font-size:18px;color:#ffc857}
+.bar{display:flex;gap:12px;flex-wrap:wrap;background:#1b3341;padding:10px 14px;border-radius:10px;margin:10px 0}
+.bar div{min-width:110px}.bar b{display:block;font-size:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.card{background:#1b3341;border-radius:10px;padding:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:6px 4px;border-bottom:1px solid #2c4a5a;text-align:left}
+input[type=number]{width:64px;background:#0d1a22;color:#fff;border:1px solid #3d6377;border-radius:6px;padding:4px}
+button{background:#ffc857;color:#10202b;border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:15px}
+button.s{background:#3d6377;color:#fff;padding:4px 8px;font-size:13px}
+#log{height:180px;overflow:auto;font-size:13px;background:#0d1a22;border-radius:8px;padding:8px}
+canvas{width:100%;background:#0d1a22;border-radius:8px}
+.good{color:#7ee081}.bad{color:#ff7b7b}.muted{color:#9fb6c3;font-size:13px}
+#over{display:none;position:fixed;inset:0;background:#000c;align-items:center;justify-content:center}
+#over .card{max-width:520px;text-align:center}
+</style></head><body><div id="app">
+<h1>☔ Monsoon Market</h1>
+<div class="muted">Run a street stall in a Delhi bazaar through 14 days of monsoon. Read the sky, buy stock at dawn, set your prices, and survive the rain.</div>
+<div class="bar"><div>Day<b id="day"></b></div><div>Cash<b id="cash"></b></div><div>Reputation<b id="rep"></b></div><div>Today's sky<b id="sky"></b></div><div>Tomorrow (forecast)<b id="fc"></b></div><div>Goal<b>₹30,000</b></div></div>
+<div class="grid">
+<div class="card"><h2>1. Morning wholesale market</h2>
+<table id="buy"><tr><th>Item</th><th>Cost</th><th>In stall</th><th>Buy</th></tr></table>
+<p class="muted">Mangoes and samosas spoil overnight (half are lost). Chai leaves keep. Umbrellas never spoil.</p></div>
+<div class="card"><h2>2. Set your prices</h2>
+<table id="price"><tr><th>Item</th><th>Fair price</th><th>Your price (₹)</th></tr></table>
+<p class="muted">Price above fair loses buyers, below fair wins them and builds reputation. Rain brings shoppers for chai and umbrellas but keeps mango buyers home.</p>
+<button id="go">Open the stall ▶</button> <span class="muted">(or press Enter)</span></div>
+<div class="card"><h2>Today's report</h2><div id="log"></div></div>
+<div class="card"><h2>Cash over time</h2><canvas id="ch" width="440" height="180"></canvas></div>
+</div>
+<div class="card" style="margin-top:12px"><h2>How to play</h2><div class="muted">Mouse or keyboard. Use the <b>+5 / +1</b> buttons (or type) to buy stock, type your selling prices, then press <b>Open the stall</b> or <b>Enter</b> to simulate the day. The forecast is right about 70% of the time. Hit ₹30,000 by the end of day 14 to win. Cash below ₹0 for a morning ends the game. Press <b>R</b> to restart.</div></div>
+</div>
+<div id="over"><div class="card"><h2 id="ot"></h2><p id="om"></p><button onclick="reset()">Play again</button></div></div>
+<script>
+const GOAL=30000;const ITEMS=[{k:'chai',n:'Chai cups',c:6,f:15,rain:1.6,sun:0.9,spoil:0},{k:'samosa',n:'Samosas',c:8,f:20,rain:1.2,sun:1,spoil:.5},{k:'mango',n:'Mangoes',c:20,f:45,rain:.5,sun:1.5,spoil:.5},{k:'umb',n:'Umbrellas',c:120,f:250,rain:3,sun:.05,spoil:0}];
+const SKY=[{n:'☀️ Sunny',r:0,t:1.1},{n:'⛅ Cloudy',r:.3,t:1},{n:'🌧️ Rain',r:.7,t:.85},{n:'⛈️ Storm',r:1,t:.45}];
+let S;
+function rnd(a,b){return a+Math.random()*(b-a)}
+function rollSky(prev){const w=[[.4,.35,.2,.05],[.25,.35,.3,.1],[.1,.3,.4,.2],[.05,.25,.45,.25]][prev];let x=Math.random(),i=0;while(x>w[i]){x-=w[i];i++}return i}
+function reset(){S={day:1,cash:1500,rep:50,stock:{chai:0,samosa:0,mango:0,umb:0},price:{},cost:{},hist:[1500],sky:1};ITEMS.forEach(it=>S.price[it.k]=it.f);S.next=rollSky(1);newMorning(true);document.getElementById('over').style.display='none';log('Welcome to the bazaar. You have ₹1,500 and a borrowed cart.',1)}
+function newMorning(first){S.today=S.next;S.next=rollSky(S.today);S.fc=Math.random()<.7?S.next:Math.floor(Math.random()*4);ITEMS.forEach(it=>{S.cost[it.k]=Math.round(it.c*rnd(.8,1.25)*(S.today>=2&&it.k=='umb'?1.2:1))});render()}
+function render(){const $=id=>document.getElementById(id);$('day').textContent=S.day+' / 14';$('cash').textContent='₹'+Math.round(S.cash);$('cash').className=S.cash<0?'bad':'';$('rep').textContent=Math.round(S.rep)+'/100';$('sky').textContent=SKY[S.today].n;$('fc').textContent=SKY[S.fc].n;
+let b='<tr><th>Item</th><th>Cost</th><th>In stall</th><th>Buy</th></tr>',p='<tr><th>Item</th><th>Fair price</th><th>Your price (₹)</th></tr>';
+ITEMS.forEach(it=>{b+=`<tr><td>${it.n}</td><td>₹${S.cost[it.k]}</td><td>${S.stock[it.k]}</td><td><button class="s" onclick="buy('${it.k}',1)">+1</button> <button class="s" onclick="buy('${it.k}',5)">+5</button> <button class="s" onclick="buy('${it.k}',20)">+20</button></td></tr>`;p+=`<tr><td>${it.n}</td><td>₹${it.f}</td><td><input type="number" min="1" value="${S.price[it.k]}" onchange="S.price['${it.k}']=Math.max(1,+this.value)"></td></tr>`});
+$('buy').innerHTML=b;$('price').innerHTML=p;chart()}
+function buy(k,q){const c=S.cost[k]*q;if(c>S.cash){log('Not enough cash for that.',0);return}S.cash-=c;S.stock[k]+=q;render()}
+function log(m,g){const l=document.getElementById('log');l.innerHTML=`<div class="${g===0?'bad':g===1?'good':''}">${m}</div>`+l.innerHTML}
+function openStall(){const sky=SKY[S.today];let foot=Math.round(rnd(60,90)*sky.t*(0.6+S.rep/125));let rev=0,lines=[],fairHits=0,gouge=0;
+ITEMS.forEach(it=>{const pr=S.price[it.k],ratio=pr/it.f;const wx=it.sun+(it.rain-it.sun)*sky.r;let demand=foot*wx*(it.k=='umb'?.12:.55)*Math.pow(ratio,-1.8)*rnd(.8,1.2);demand=Math.max(0,Math.round(demand));const sold=Math.min(demand,S.stock[it.k]);S.stock[it.k]-=sold;rev+=sold*pr;if(ratio<=1.05)fairHits+=sold;if(ratio>1.4)gouge+=sold;const missed=demand-sold;lines.push(`${it.n}: sold ${sold} at ₹${pr}${missed>0?` (${missed} turned away)`:''}`);if(missed>0)S.rep-=Math.min(4,missed*.15)});
+S.cash+=rev;S.rep=Math.max(0,Math.min(100,S.rep+fairHits*.04-gouge*.08+(rev>0?1:-2)));
+let spoiled=0;ITEMS.forEach(it=>{if(it.spoil){const l=Math.ceil(S.stock[it.k]*it.spoil);S.stock[it.k]-=l;spoiled+=l}});
+const rent=S.today==3?120:80;S.cash-=rent;
+log(`<b>Day ${S.day} · ${sky.n} · ${foot} shoppers</b><br>${lines.join('<br>')}<br>Revenue ₹${rev}, stall rent ₹${rent}${spoiled?`, ${spoiled} items spoiled`:''}${S.today==3?' (storm surcharge)':''}`,rev>rent?1:0);
+S.hist.push(S.cash);S.day++;
+if(S.cash<0)return end(false,'Your cash fell below zero and the cart was taken back.');
+if(S.day>14)return end(S.cash>=GOAL,S.cash>=GOAL?`You finished with ₹${Math.round(S.cash)}. The bazaar knows your name.`:`You finished with ₹${Math.round(S.cash)}, short of ₹30,000. The monsoon wins this year.`);
+newMorning()}
+function end(win,msg){render();document.getElementById('ot').textContent=win?'🏆 You beat the monsoon!':'🌧️ Season over';document.getElementById('om').textContent=msg+` Reputation ${Math.round(S.rep)}/100.`;document.getElementById('over').style.display='flex'}
+function chart(){const c=document.getElementById('ch'),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);const h=S.hist,mx=Math.max(GOAL*1.08,...h),mn=Math.min(0,...h);const Y=v=>c.height-10-(v-mn)/(mx-mn)*(c.height-20);x.strokeStyle='#ffc857';x.setLineDash([4,4]);x.beginPath();x.moveTo(0,Y(GOAL));x.lineTo(c.width,Y(GOAL));x.stroke();x.setLineDash([]);x.strokeStyle='#7ee081';x.lineWidth=2;x.beginPath();h.forEach((v,i)=>{const px=10+i*(c.width-20)/14;i?x.lineTo(px,Y(v)):x.moveTo(px,Y(v))});x.stroke();x.fillStyle='#9fb6c3';x.font='11px sans-serif';x.fillText('goal ₹30,000',6,Y(GOAL)-4)}
+document.getElementById('go').onclick=openStall;
+document.addEventListener('keydown',e=>{if(e.key=='Enter'&&document.getElementById('over').style.display!='flex')openStall();if(e.key=='r'||e.key=='R'){if(e.target.tagName!='INPUT')reset()}});
+reset();
+</script></body></html>
